@@ -37,7 +37,7 @@ int main()
         len_buf[i]=frame_len;
         printf("write frame len:%d\n", frame_len);
         fwrite(*frame_data, frame_len, 1, file);
-        snprintf(buf, sizeof(buf)-1, "const unsigned char video_264_%d_%d_%d[] = {", encode_config.width, encode_config.height, k++);
+        snprintf(buf, sizeof(buf)-1, "const unsigned char video_%s_%d_%d_%d[] = {", encode_config.coder, encode_config.width, encode_config.height, k++);
         fwrite(buf, strlen(buf), 1, file2);
         for(j=0; j< frame_len; j++) {
             snprintf(buf, sizeof(buf)-1, "0x%.2x,", (*frame_data)[j]);
@@ -46,11 +46,12 @@ int main()
         fwrite("};\n", 3, 1, file2);
         emu_destroy_frame(frame_data);
     }
-    fwrite("struct video_264_t {\nunsigned char const *data;\nint data_len;\n};\n", strlen("struct video_264_t {\nunsigned char const *data;\nint data_len;\n};\n"), 1, file2);
-    snprintf(buf, sizeof(buf)-1, "struct video_264_t video_264_%d_%d[] = {", encode_config.width, encode_config.height);
+    snprintf(buf, sizeof(buf)-1, "struct video_%s_t {\nunsigned char const *data;\nint data_len;\n};\n", encode_config.coder);
+    fwrite(buf, strlen(buf), 1, file2);
+    snprintf(buf, sizeof(buf)-1, "struct video_%s_t video_%s_%d_%d[] = {", encode_config.coder, encode_config.coder, encode_config.width, encode_config.height);
     fwrite(buf, strlen(buf), 1, file2);
     for(i=0; i<k; i++) {
-        snprintf(buf, sizeof(buf)-1, "{video_264_%d_%d_%d, %d},", encode_config.width, encode_config.height, i, len_buf[i]);
+        snprintf(buf, sizeof(buf)-1, "{video_%s_%d_%d_%d, %d},", encode_config.coder, encode_config.width, encode_config.height, i, len_buf[i]);
         fwrite(buf, strlen(buf), 1, file2);
     }
     fwrite("};\n", 3, 1, file2);
