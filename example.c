@@ -1,17 +1,18 @@
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "emu_coder.h"
-
 int main()
 {
-    FILE *file, *file2;
+    FILE *file, *file2; 
     struct emu_encode_config encode_config;
     long task;
     unsigned char** frame_data;
     int frame_len;
     char buf[1024];
     int i,j,k=0;
+    int *len_buf;
     encode_config.bit_rate = 100000;
     encode_config.coder = "libx264";
     encode_config.frame_rate = 25;
@@ -30,8 +31,10 @@ int main()
         printf("open output file fail\n");
         return -1;
     }
+    len_buf = malloc(sizeof(*len_buf)*encode_config.gop_size);
     for(i=0; i<encode_config.gop_size; i++){
         emu_get_frame_data((long)task, &frame_data, &frame_len);
+        len_buf[i]=frame_len;
         printf("write frame len:%d\n", frame_len);
         fwrite(*frame_data, frame_len, 1, file);
         snprintf(buf, sizeof(buf)-1, "const unsigned char video_264_%d_%d_%d[] = {", encode_config.width, encode_config.height, k++);
@@ -40,15 +43,14 @@ int main()
             snprintf(buf, sizeof(buf)-1, "0x%.2x,", (*frame_data)[j]);
             fwrite(buf, 5, 1, file2);
         }
-
         fwrite("};\n", 3, 1, file2);
-        
         emu_destroy_frame(frame_data);
     }
-    
-    fwrite("unsigned char const* p_video_264[] = {", strlen("unsigned char const* p_video_264[] = {"), 1, file2);
+    fwrite("struct video_264_t {\nunsigned char const *data;\nint data_len;\n};\n", strlen("struct video_264_t {\nunsigned char const *data;\nint data_len;\n};\n"), 1, file2);
+    snprintf(buf, sizeof(buf)-1, "struct video_264_t video_264_%d_%d[] = {", encode_config.width, encode_config.height);
+    fwrite(buf, strlen(buf), 1, file2);
     for(i=0; i<k; i++) {
-        snprintf(buf, sizeof(buf)-1, "video_264_%d_%d_%d,", encode_config.width, encode_config.height, i);
+        snprintf(buf, sizeof(buf)-1, "{video_264_%d_%d_%d, %d},", encode_config.width, encode_config.height, i, len_buf[i]);
         fwrite(buf, strlen(buf), 1, file2);
     }
     fwrite("};\n", 3, 1, file2);
