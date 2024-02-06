@@ -14,4 +14,5 @@ cmake -S . -B build
 cd build
 make
 ./example
+在目录下会生成码流和对于的.c文件, .c文件可以直接#include导入使用。
 ```
